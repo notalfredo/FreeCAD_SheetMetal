@@ -88,27 +88,57 @@ In engineering mode, such "non-visually-inspectable" values are not assigned wit
 3. Select `enabled` in `Engineering UX Mode` field.
 
 # Installation
-For installation and how to use, please visit:  
-http://theseger.com/projects/2015/06/sheet-metal-addon-for-freecad/  
-Starting from FreeCAD 0.17 it can be installed via the [Addon Manager](https://github.com/FreeCAD/FreeCAD-addons) (from Tools menu)
+SheetMetal WB can be installed via the [Addon Manager](https://github.com/FreeCAD/FreeCAD-addons) (from Tools menu)
 
 #### References
 * Development repo: https://github.com/shaise/FreeCAD_SheetMetal  
 * FreeCAD wiki page: https://www.freecadweb.org/wiki/SheetMetal_Workbench  
-* Authors webpage: http://theseger.com/projects/2015/06/sheet-metal-addon-for-freecad/  
 * FreeCAD Forum announcement/discussion [thread](https://forum.freecadweb.org/viewtopic.php?f=3&t=60818) 
 
 #### Release notes:
-* V0.7.11 12 Feb 2025:  Gui enhancements and Flang's face selection removal by [@sheetmetalman][sheetmetalman].
-                      - Add clear selection button
-* V0.7.10 10 Feb 2025:  Improve flange cmd: Add reference to face by [@sheetmetalman][sheetmetalman].
-* V0.7.05 21 Jan 2025:  Fix DXF export by [@alexneufeld][alexneufeld].
+* V0.7.58 25 Oct 2025:  Add reverse-extend feature.  
+* V0.7.57 23 Oct 2025:  Allow formulas im material sheets by  [@UR-0][UR-0].  
+                      - Reinstate extend by sketch functionality.  
+* V0.7.56 19 Oct 2025:  Sync selections with task panel lists by [@zokhasan][zokhasan].  
+                      - Fix compatability with linkstage branch.  
+* V0.7.55 20 Sep 2025:  Remove some debug code from unfolder.  
+                      - Remove redundant translation commands by [@zokhasan][zokhasan].  
+* V0.7.54 17 Sep 2025:  Fix round relief bug.  
+                      - Add ".gitattributes" to fix line endings by [@zokhasan][zokhasan].  
+                      - Remove duplicate function by [@zokhasan][zokhasan].  
+* V0.7.53 13 Sep 2025:  Small patch to prevent old files from breaking.  
+* V0.7.52 09 Sep 2025:  Fix possible mismatch between outside and inside material.  
+* V0.7.51 06 Sep 2025:  Fix some more gaps and inner material cases.  
+                      - Fix bug when material spreadsheet is renamed  
+* V0.7.50 04 Sep 2025:  Fix issues with gaps and inner material.  
+                      - Fix typos by [@luzpaz][luzpaz].  
+                      - Refactoring SheetMetal code by [@zokhasan][zokhasan].  
+                      - BaseShape: hide setting instead disable by [@zokhasan][zokhasan].  
+                      - keep Windows LibPack 0.21.x users working by [@Syres916][Syres916].  
+                      - Fix enable params when on BaseShapeTaskPanel by [@zokhasan][zokhasan].  
+                      - Remove duplicate class SMLogger by [@zokhasan][zokhasan].  
+                      - Add RU localisation by [@zokhasan][zokhasan].  
+                      - Fix assign color for lines in UnfoldTaskPanel by [@zokhasan][zokhasan].  
+* V0.7.24 03 Jul 2025:  Add Icons to task panel's titles by [@zokhasan][zokhasan].  
+* V0.7.23 24 Jun 2025:  Fix problem with object transform.  
+                      - NetworkX compatibility fix by [@Syres916][Syres916].  
+                      - Separation of Name and Label for Unfold by [@GS90][GS90].  
+* V0.7.22 18 Mar 2025:  Detach unfolded object from Body.  
+                      - Improve bezier conversion to arcs by [@alexneufeld][alexneufeld].  
+* V0.7.21 01 Mar 2025:  Add Task-Panel to Wrapped Cutout tool.  
+* V0.7.20 27 Feb 2025:  Improve sheetmetal gui tools.  
+                      - Add Task-Panel to forming tool.  
+                      - Fix sketch color issues by [@Roy-043][Roy-043] and [@Syres916][Syres916].  
+* V0.7.11 12 Feb 2025:  Gui enhancements and Flang's face selection removal by [@sheetmetalman][sheetmetalman].  
+                      - Add clear selection button  
+* V0.7.10 10 Feb 2025:  Improve flange cmd: Add reference to face by [@sheetmetalman][sheetmetalman].  
+* V0.7.05 21 Jan 2025:  Fix DXF export by [@alexneufeld][alexneufeld].  
                       - Add missing property to FoldWall UI.  
-* V0.7.04 19 Jan 2025:  Change some python code to be compatible with Py ver 3.8.
+* V0.7.04 19 Jan 2025:  Change some python code to be compatible with Py ver 3.8.  
                       - Fix FoldWall not claiming sketches  
 * V0.7.03 15 Jan 2025:  Fix ansi/din support.  
 * V0.7.02 15 Jan 2025:  Fix thickness detection by [@alexneufeld][alexneufeld].  
-                      - Improve detection of missing networkx dependency
+                      - Improve detection of missing networkx dependency  
 * V0.7.01 13 Jan 2025:  New Unfolder compatibility with FC0.21 and LS3 by [@alexneufeld][alexneufeld] and [@Syres916][Syres916].  
 * V0.7.00 11 Jan 2025:  New SheetMetal Unfolder! by [@alexneufeld][alexneufeld].  
                       - Unfolder backward compatibility fixes by [@GS90][GS90].  
@@ -123,7 +153,7 @@ Starting from FreeCAD 0.17 it can be installed via the [Addon Manager](https://g
                       - Update translations by [@hasecilu][hasecilu].  
                       - Fix python compatibility by [@Syres916][Syres916].  
                       - Extruded cutout fixes by [@sheetmetalman][sheetmetalman].  
-                      - Fix round relief apect ratio limitations.  
+                      - Fix round relief aspect ratio limitations.  
 * V0.6.00 03 Dec 2024:  Code refactoring, Remove duplication, Add GUI to most functions.  
 * V0.5.10 25 Nov 2024:  Extruded Cutout: add improvements and fixes by [@sheetmetalman][sheetmetalman].  
                       - Update translations from CrowdIn by [@hasecilu][hasecilu].  
@@ -298,6 +328,8 @@ Starting from FreeCAD 0.17 it can be installed via the [Addon Manager](https://g
 [robbeban]: https://github.com/robbeban
 [sheetmetalman]: https://github.com/sheetmetalman
 [GS90]: https://github.com/GS90
+[zokhasan]: https://github.com/zokhasan
+[UR-0]: https://github.com/UR-0
 [topic82482]: https://forum.freecad.org/viewtopic.php?t=82482
 [30]: https://github.com/shaise/FreeCAD_SheetMetal/issues/30
 [33]: https://github.com/shaise/FreeCAD_SheetMetal/issues/33
@@ -311,3 +343,4 @@ Starting from FreeCAD 0.17 it can be installed via the [Addon Manager](https://g
 
 ## License
 GPLv3 (see [LICENSE](LICENSE))
+

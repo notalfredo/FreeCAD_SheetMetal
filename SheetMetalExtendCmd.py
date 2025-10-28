@@ -1,5 +1,4 @@
-# -*- coding: utf-8 -*-
-###################################################################################
+########################################################################
 #
 #  SheetMetalExtendCmd.py
 #
@@ -21,21 +20,25 @@
 #  MA 02110-1301, USA.
 #
 #
-###################################################################################
+########################################################################
 
 import math
 import os
+
 import FreeCAD
 import Part
-from FreeCAD import Base
+
 import SheetMetalTools
 
-# IMPORTANT: please remember to change the element map version in case of any
-# changes in modeling logic
+Base = FreeCAD.Base
+
+# IMPORTANT: please remember to change the element map version in case
+# of any changes in modeling logic.
 smElementMapVersion = "sm1."
 smEpsilon = SheetMetalTools.smEpsilon
+translate = FreeCAD.Qt.translate
 
-# list of properties to be saved as defaults
+# List of properties to be saved as defaults.
 smExtrudeDefaultVars = ["Refine"]
 
 
@@ -62,14 +65,15 @@ def smMakeFace(edge, dir, extLen, gap1=0.0, gap2=0.0, angle1=0.0, angle2=0.0, op
         face.mapShapes([(edge, face)], None, op)
     return face
 
+
 def smTouchFace(Face, obj, thk):
-    # find face Modified During loop
+    # # Find face Modified During loop.
     # Part.show(Face,'Face')
     facelist = []
     for face in obj.Faces:
         # Part.show(face,'face')
         face_common = face.common(Face)
-        if not (face_common.Faces):
+        if not face_common.Faces:
             continue
         edge = face.Vertexes[0].extrude(face.normalAt(0, 0) * -thk * 2)
         # Part.show(edge,'edge')
@@ -82,14 +86,14 @@ def smTouchFace(Face, obj, thk):
 
 
 def smgetSubface(face, obj, edge, thk):
-    # Project thickness side edge to get one side rectangle
+    # Project thickness side edge to get one side rectangle.
     normal = face.normalAt(0, 0)
     faceVert = face.Vertexes[0].Point
     pt1 = edge.Vertexes[0].Point.projectToPlane(faceVert, normal)
     pt2 = edge.Vertexes[1].Point.projectToPlane(faceVert, normal)
     vec1 = pt2 - pt1
 
-    # find min & max point of cut shape
+    # Find min & max point of cut shape.
     wallsolidlist = []
     for solid in obj.Solids:
         pt_list = []
@@ -109,13 +113,13 @@ def smgetSubface(face, obj, edge, thk):
         )
         # print([p1, p2])
 
-        # Find angle between diagonal & thickness side edge
+        # Find angle between diagonal & thickness side edge.
         vec2 = p2 - p1
         angle1 = vec2.getAngle(vec1)
         angle = math.degrees(angle1)
         # print(angle)
 
-        # Check & correct orientation of diagonal edge rotation
+        # Check & correct orientation of diagonal edge rotation.
         e = Part.makeLine(p1, p2)
         e.rotate(p1, normal, -angle)
         vec2 = (e.valueAt(e.LastParameter) - e.valueAt(e.FirstParameter)).normalize()
@@ -124,7 +128,7 @@ def smgetSubface(face, obj, edge, thk):
         if coeff != 1.0:
             angle = 90 - angle
 
-        # Create Cut Rectangle Face from min/max points & angle
+        # Create Cut Rectangle Face from min/max points & angle.
         e = Part.Line(p1, p2).toShape()
         e1 = e.copy()
         e1.rotate(p1, normal, -angle)
@@ -148,18 +152,8 @@ def smgetSubface(face, obj, edge, thk):
     return wallsolidlist
 
 
-def smExtrude(
-    extLength=10.0,
-    gap1=0.0,
-    gap2=0.0,
-    subtraction=False,
-    offset=0.02,
-    refine=True,
-    sketch="",
-    selFaceNames="",
-    selObject="",
-):
-
+def smExtrude(extLength=10.0, gap1=0.0, gap2=0.0, reversed=False, subtraction=False, offset=0.2,
+              refine=True, sketch="", selFaceNames="", selObject="", ):
     import BOPTools.SplitFeatures
 
     finalShape = selObject
@@ -167,7 +161,7 @@ def smExtrude(
         selItem = selObject.getElement(SheetMetalTools.getElementFromTNP(selFaceName))
         selFace = SheetMetalTools.smGetFaceByEdge(selItem, selObject)
 
-        # find the narrow edge
+        # Find the narrow edge.
         thk = 999999.
         thkEdge = None
         for edge in selFace.Edges:
@@ -175,7 +169,7 @@ def smExtrude(
                 thk = abs(edge.Length)
                 thkEdge = edge
 
-        # find a length edge
+        # Find a length edge.
         p0 = thkEdge.valueAt(thkEdge.FirstParameter)
         for lenEdge in selFace.Edges:
             p1 = lenEdge.valueAt(lenEdge.FirstParameter)
@@ -187,7 +181,7 @@ def smExtrude(
             if (p2 - p0).Length < smEpsilon:
                 break
 
-        # find the large face connected with selected face
+        # Find the large face connected with selected face.
         list2 = selObject.ancestorsOfType(lenEdge, Part.Face)
         for Cface in list2:
             if not (Cface.isSame(selFace)):
@@ -202,235 +196,251 @@ def smExtrude(
         thkDir = pThkDir1.sub(pThkDir2).normalize()
         FaceDir = selFace.normalAt(0, 0)
 
-        # if sketch is as wall
-        sketches = False
+        # If sketch is as wall.
+        useSketch = False
         if sketch:
             if sketch.Shape.Wires[0].isClosed():
-                sketches = True
+                useSketch = True
             else:
                 pass
 
-        # Split solid Based on Top Face into two solid
+        # Split solid Based on Top Face into two solid.
         Topface_Solid = Cface.Wires[0].extrude(Cface.normalAt(0, 0) * -thk)
-        # Part.show(Topface_Solid,"Topface_Solid")
-        SplitSolids = BOPTools.SplitAPI.slice(
-            finalShape, Topface_Solid.Faces, "Standard", 0.0
-        )
-        # Part.show(SplitSolids,"SplitSolids")
+        # Part.show(Topface_Solid, "Topface_Solid")
+        SplitSolids = BOPTools.SplitAPI.slice(finalShape, Topface_Solid.Faces, "Standard", 0.0)
+        # Part.show(SplitSolids, "SplitSolids")
         for SplitSolid in SplitSolids.Solids:
             check_face = SplitSolid.common(Cface)
             if check_face.Faces:
                 SplitSolid1 = SplitSolid
                 break
-        # Part.show(SplitSolid1,"SplitSolid1")
+        # Part.show(SplitSolid1, "SplitSolid1")
+
+        SplitSolid2 = None
         for SplitSolid in SplitSolids.Solids:
             if not (SplitSolid.isSame(SplitSolid1)):
                 SplitSolid2 = SplitSolid
                 break
         # Part.show(SplitSolid2, "SplitSolid2")
 
-        # Make solid from sketch, if sketch is present
-        solidlist = []
-        if sketches:
-            Wall_face = Part.makeFace(sketch.Shape.Wires, "Part::FaceMakerBullseye")
-            check_face = Wall_face.common(Cface)
-            if not (check_face.Faces):
-                thkDir = thkDir * -1
-            wallSolid = Wall_face.extrude(thkDir * thk)
-            # Part.show(wallSolid, "wallSolid")
-            solidlist.append(wallSolid)
-
-            # To find Overlapping Solid, non thickness side Face that touch Overlapping Solid
-            overlap_solid = wallSolid.common(SplitSolid2)
-            # Part.show(overlap_solid, "overlap_solid")
-
+        # Make solid from sketch, if sketch is present.
+        extendsolid = None
+        if useSketch:
             overlap_solidlist = []
-            if overlap_solid.Faces:
-                substract_face = smTouchFace(wallSolid, SplitSolid2, thk)
-                # Part.show(substract_face, "substract_face")
-                # To get solids that aligned/normal to touching face
-                overlap_solidlist = smgetSubface(
-                    substract_face, overlap_solid, lenEdge, thk
-                )
-
-            # Substract solid from Initial Solid
-            if subtraction:
-                for solid in overlap_solidlist:
-                    CutSolid = solid.makeOffsetShape(offset, 0.0, fill=False, join=2)
-                    # Part.show(CutSolid, "CutSolid")
-                    finalShape = finalShape.cut(CutSolid)
-                    # Part.show(finalShape,"finalShape")
-
-        elif extLength > 0.0:
-            # create wall, if edge or face selected
-            Wall_face = smMakeFace(lenEdge, FaceDir, extLength, gap1, gap2, op="SMW")
+            Wall_face = Part.makeFace(sketch.Shape.Wires, "Part::FaceMakerBullseye")
+            if not Wall_face.isCoplanar(Cface, smEpsilon):
+                thkDir *= -1
             wallSolid = Wall_face.extrude(thkDir * thk)
-            # Part.show(wallSolid,"wallSolid")
-            solidlist.append(wallSolid)
+            if (wallSolid.Volume - smEpsilon) < 0.0:
+                raise SheetMetalTools.SMException("Incorrect face selected. Please select a side face.")
+            # Part.show(wallSolid, "wallSolid")
+            extendsolid = wallSolid
+            # To find Overlapping Solid, non thickness side Face that
+            # touch Overlapping Solid.
+            if SplitSolid2:
+                overlap_solid = wallSolid.common(SplitSolid2)
+                # Part.show(overlap_solid, "overlap_solid")
+                if overlap_solid.Faces:
+                    substract_face = smTouchFace(wallSolid, SplitSolid2, thk)
+                    # Part.show(substract_face, "substract_face")
+                    # # To get solids that aligned/normal to touching face.
+                    overlap_solidlist = smgetSubface(substract_face, overlap_solid, lenEdge, thk)
+                # Substract solid from Initial Solid.
+                if subtraction:
+                    for solid in overlap_solidlist:
+                        CutSolid = solid.makeOffsetShape(offset, 0.0, fill=False, join=2)
+                        # Part.show(CutSolid, "CutSolid")
+                        finalShape = finalShape.cut(CutSolid)
+                        # Part.show(finalShape, "finalShape")
+        elif extLength > 0.0:
+            # Create wall, if edge or face selected.
+            if reversed:
+                FaceDir *= -1
+            Wall_face = smMakeFace(lenEdge, FaceDir, extLength, gap1, gap2, op="SMW")
+            # Part.show(Wall_face, "Wall_face")
+            extendsolid = Wall_face.extrude(thkDir * thk)
+            # Part.show(extendsolid, "extendsolid")
 
-        # Fuse All solid created to Split solid
-        if len(solidlist) > 0:
-            resultSolid = SplitSolid1.fuse(solidlist[0])
-            # Part.show(resultSolid,"resultSolid")
-
-            # Merge final list
-            finalShape = finalShape.cut(resultSolid)
-            # Part.show(finalShape,"finalShape")
+        # Fuse All solid created to Split solid.
+        if extendsolid:
+            if reversed and not useSketch:
+                finalShape = finalShape.cut(SplitSolid1)
+                resultSolid = SplitSolid1.cut(extendsolid)
+            else:
+                resultSolid = SplitSolid1.fuse(extendsolid)
+                # Part.show(resultSolid, "resultSolid")
+                # # Merge final list.
+                finalShape = finalShape.cut(resultSolid)
+            # Part.show(finalShape, "finalShape")
             finalShape = finalShape.fuse(resultSolid)
 
-    # Part.show(finalShape,"finalShape")
+    # Part.show(finalShape, "finalShape")
     if refine:
         finalShape = finalShape.removeSplitter()
     return finalShape
 
 
 class SMExtrudeWall:
-    def __init__(self, obj, selobj, sel_items):
-        """ "Add Sheetmetal Wall by Extending" """
-
-        _tip_ = FreeCAD.Qt.translate("App::Property", "Length of Wall")
-        obj.addProperty("App::PropertyLength", "length", "Parameters", _tip_).length = (
-            10.0
-        )
-        _tip_ = FreeCAD.Qt.translate("App::Property", "Gap from left side")
+    def __init__(self, obj, selobj, sel_items, selSketch=None):
+        """Add SheetMetal Wall by Extending."""
+        _tip_ = translate("App::Property", "Length of Wall")
+        obj.addProperty("App::PropertyLength", "length", "Parameters", _tip_).length = 10.0
+        _tip_ = translate("App::Property", "Gap from left side")
         obj.addProperty("App::PropertyDistance", "gap1", "Parameters", _tip_).gap1 = 0.0
-        _tip_ = FreeCAD.Qt.translate("App::Property", "Gap from right side")
+        _tip_ = translate("App::Property", "Gap from right side")
         obj.addProperty("App::PropertyDistance", "gap2", "Parameters", _tip_).gap2 = 0.0
-        _tip_ = FreeCAD.Qt.translate("App::Property", "Base object")
-        obj.addProperty(
-            "App::PropertyLinkSub", "baseObject", "Parameters", _tip_
-        ).baseObject = (selobj, sel_items)
-        _tip_ = FreeCAD.Qt.translate("App::Property", "Wall Sketch")
-        obj.addProperty("App::PropertyLink", "Sketch", "ParametersExt", _tip_)
-        _tip_ = FreeCAD.Qt.translate("App::Property", "Use Subtraction")
-        obj.addProperty(
-            "App::PropertyBool", "UseSubtraction", "ParametersExt", _tip_
-        ).UseSubtraction = False
-        _tip_ = FreeCAD.Qt.translate("App::Property", "Offset for subtraction")
-        obj.addProperty(
-            "App::PropertyDistance", "Offset", "ParametersExt", _tip_
-        ).Offset = 0.02
-        _tip_ = FreeCAD.Qt.translate("App::Property", "Use Refine")
-        obj.addProperty(
-            "App::PropertyBool", "Refine", "ParametersExt", _tip_
-        ).Refine = True
+        _tip_ = translate("App::Property", "Base object")
+        obj.addProperty("App::PropertyLinkSub", "baseObject", "Parameters",
+                        _tip_).baseObject = (selobj, sel_items)
+        self.addVerifyProperties(obj, selSketch)
         obj.Proxy = self
         SheetMetalTools.taskRestoreDefaults(obj, smExtrudeDefaultVars)
-    
-    def addVerifyProperties(self, obj):
-        pass
 
     def getElementMapVersion(self, _fp, ver, _prop, restored):
         if not restored:
             return smElementMapVersion + ver
+        return None
+
+    def addVerifyProperties(self, obj, selSketch=None):
+        SheetMetalTools.smAddBoolProperty(obj, "reversed",
+                translate("App::Property", "Reverse extend direction (cut)"), False, "Parameters")
+        SheetMetalTools.smAddProperty(obj, "App::PropertyLink", "Sketch", 
+                translate("App::Property", "Wall Sketch"), selSketch, "ParametersExt")
+        SheetMetalTools.smAddBoolProperty(obj, "UseSubtraction",
+                translate("App::Property", "Use Subtraction"), False, "ParametersExt")
+        SheetMetalTools.smAddDistanceProperty(obj, "Offset",
+                translate("App::Property", "Offset for subtraction"), 0.2, "ParametersExt")
+        SheetMetalTools.smAddBoolProperty(obj, "Refine",
+                translate("App::Property", "Use Refine"), True, "ParametersExt")
+        if hasattr(obj, "UseSubstraction"):
+                obj.UseSubtraction = obj.UseSubstraction  # Compatibility with old files.
+        
 
     def execute(self, fp):
-        if not hasattr(fp, "Sketch"):
-            _tip_ = FreeCAD.Qt.translate("App::Property", "Wall Sketch")
-            fp.addProperty("App::PropertyLink", "Sketch", "ParametersExt", _tip_)
-            _tip_ = FreeCAD.Qt.translate("App::Property", "Use Subtraction")
-            fp.addProperty(
-                "App::PropertyDistance", "Offset", "ParametersExt", _tip_
-            ).Offset = 0.02
-            _tip_ = FreeCAD.Qt.translate("App::Property", "Use Refine")
-            fp.addProperty(
-                "App::PropertyBool", "Refine", "ParametersExt", _tip_
-            ).Refine = False
-        if not hasattr(fp, "UseSubtraction"):
-            useSub = False
-            if hasattr(fp, "UseSubstraction"):
-                useSub = fp.UseSubstraction  # compatibility with old files
-            _tip_ = FreeCAD.Qt.translate("App::Property", "Use Subtraction")
-            fp.addProperty(
-                "App::PropertyBool", "UseSubtraction", "ParametersExt", _tip_
-            ).UseSubtraction = fp.UseSubstraction
-        # pass selected object shape
+        """Execute SheetMetal Wall by Extruding."""
+        self.addVerifyProperties(fp)
+
+        # Pass selected object shape.
         Main_Object = fp.baseObject[0].Shape.copy()
         face = fp.baseObject[1]
+        fp.Shape = smExtrude(extLength=fp.length.Value,
+                             gap1=fp.gap1.Value,
+                             gap2=fp.gap2.Value,
+                             reversed=fp.reversed,
+                             subtraction=fp.UseSubtraction,
+                             offset=fp.Offset.Value,
+                             refine=fp.Refine,
+                             sketch=fp.Sketch,
+                             selFaceNames=face,
+                             selObject=Main_Object)
+        if fp.Sketch :
+            fp.Sketch.ViewObject.Visibility = False
 
-        s = smExtrude(
-            extLength=fp.length.Value,
-            gap1=fp.gap1.Value,
-            gap2=fp.gap2.Value,
-            subtraction=fp.UseSubtraction,
-            offset=fp.Offset.Value,
-            refine=fp.Refine,
-            sketch=fp.Sketch,
-            selFaceNames=face,
-            selObject=Main_Object,
-        )
-        fp.Shape = s
 
 
-##########################################################################################################
+###################################################################################################
 # Gui code
-##########################################################################################################
+###################################################################################################
 
 if SheetMetalTools.isGuiLoaded():
-    from FreeCAD import Gui
     from PySide import QtCore, QtGui
 
+    Gui = FreeCAD.Gui
     icons_path = SheetMetalTools.icons_path
 
+
     class SMViewProviderTree(SheetMetalTools.SMViewProvider):
-        ''' Part WB style ViewProvider '''        
+        """Part WB style ViewProvider."""
+
         def getIcon(self):
-            return os.path.join(icons_path, "SheetMetal_Extrude.svg")
-        
+            if self.Object.Sketch:
+                return os.path.join(icons_path, "SheetMetal_ExtendBySketch.svg")
+            else:
+                return os.path.join(icons_path, "SheetMetal_Extrude.svg")
+
         def getTaskPanel(self, obj):
             return SMExtendWallTaskPanel(obj)
-        
+
+
     class SMViewProviderFlat(SMViewProviderTree):
-        ''' Part Design WB style ViewProvider - backward compatibility only''' 
+        """Part Design WB style ViewProvider.
+
+        Note:
+            Backward compatibility only.
+
+        """
 
 
     class SMExtendWallTaskPanel:
-        """A TaskPanel for the Sheetmetal"""
+        """A TaskPanel for the SheetMetal."""
 
         def __init__(self, obj):
             self.obj = obj
             self.form = SheetMetalTools.taskLoadUI("ExtendTaskPanel.ui")
-            obj.Proxy.addVerifyProperties(obj) # Make sure all properties are added
-            SheetMetalTools.taskConnectSelection(
-                self.form.AddRemove, self.form.tree, self.obj, ["Face"], self.form.pushClearSel
-            )
-            SheetMetalTools.taskConnectSpin(self, self.form.OffsetA, "gap1")
-            SheetMetalTools.taskConnectSpin(self, self.form.OffsetB, "gap2")
-            SheetMetalTools.taskConnectSpin(self, self.form.Length, "length")
-            SheetMetalTools.taskConnectCheck(self, self.form.RefineCheckbox, "Refine")
+
+            # Make sure all properties are added.
+            obj.Proxy.addVerifyProperties(obj)
+
+            self.selParams = SheetMetalTools.taskConnectSelection(self.form.AddRemove,
+                                                                  self.form.tree, self.obj,
+                                                                  ["Face"], self.form.pushClearSel)
+            SheetMetalTools.taskConnectSelectionSingle(self.form.buttSelSketch,
+                                                       self.form.txtSelSketch, obj, "Sketch",
+                                                       ("Sketcher::SketchObject", []))
+            SheetMetalTools.taskConnectSpin(obj, self.form.OffsetA, "gap1")
+            SheetMetalTools.taskConnectSpin(obj, self.form.OffsetB, "gap2")
+            SheetMetalTools.taskConnectSpin(obj, self.form.Length, "length")
+            SheetMetalTools.taskConnectSpin(obj, self.form.Offset, "Offset")
+            SheetMetalTools.taskConnectCheck(obj, self.form.RefineCheckbox, "Refine")
+            SheetMetalTools.taskConnectCheck(obj, self.form.checkIntersectClear, "UseSubtraction")
+            SheetMetalTools.taskConnectCheck(obj, self.form.checkReversed, "reversed")
+            isStandardExtend = self.obj.Sketch is None
+            self.form.groupExtend.setVisible(isStandardExtend)
+            self.form.groupExtendBySketch.setVisible(not isStandardExtend)
+
+            # for now disable clear sketch button since we have a seperate command for that
+            self.form.buttClearSketch.setVisible(False)
+            self.form.buttClearSketch.clicked.connect(self.clearPressed)
 
         def isAllowedAlterSelection(self):
             return True
 
         def isAllowedAlterView(self):
             return True
+        
+        def clearPressed(self):
+            if self.obj.Sketch is None:
+                return
+            self.obj.Sketch.ViewObject.Visibility = True
+            self.obj.Sketch = None
+            self.form.txtSelSketch.setText("")
+            self.obj.recompute()
 
         def accept(self):
-            SheetMetalTools.taskAccept(self, self.form.AddRemove)
+            SheetMetalTools.taskAccept(self)
             SheetMetalTools.taskSaveDefaults(self.obj, smExtrudeDefaultVars)
             return True
 
         def reject(self):
-            SheetMetalTools.taskReject(self, self.form.AddRemove)
+            SheetMetalTools.taskReject(self)
+
 
     class SMExtrudeCommandClass:
-        """Extrude face"""
+        """Extrude face."""
 
         def GetResources(self):
             return {
-                "Pixmap": os.path.join(
-                    icons_path, "SheetMetal_Extrude.svg"
-                ),  # the name of a svg file available in the resources
-                "MenuText": FreeCAD.Qt.translate("SheetMetal", "Extend Face"),
-                "Accel": "E",
-                "ToolTip": FreeCAD.Qt.translate(
-                    "SheetMetal",
-                    "Extends one or more face, on existing sheet metal.\n"
-                    "1. Select edges or thickness side faces to create walls.\n"
-                    "2. Select a sketch in property editor to create tabs. \n"
-                    "3. Use Property editor to modify other parameters",
-                ),
-            }
+                    # The name of a svg file available in the resources.
+                    "Pixmap": os.path.join(icons_path, "SheetMetal_Extrude.svg"),
+                    "MenuText": translate("SheetMetal", "Extend Face"),
+                    "Accel": "E",
+                    "ToolTip": translate(
+                        "SheetMetal",
+                        "Extends one or more face, on existing sheet metal.\n"
+                        "1. Select edges or thickness side faces to extend walls.\n"
+                        "2. Use Property-editor / Task-panel to modify other parameters",
+                        ),
+                    }
 
         def Activated(self):
             sel = Gui.Selection.getSelectionEx()[0]
@@ -438,23 +448,73 @@ if SheetMetalTools.isGuiLoaded():
             newObj, activeBody = SheetMetalTools.smCreateNewObject(selobj, "Extend")
             if newObj is None:
                 return
-            SMExtrudeWall(newObj, selobj, sel.SubElementNames)
+            SMExtrudeWall(newObj, selobj, sel.SubElementNames, None)
             SMViewProviderTree(newObj.ViewObject)
             SheetMetalTools.smAddNewObject(selobj, newObj, activeBody, SMExtendWallTaskPanel)
             return
 
         def IsActive(self):
             if (
-                len(Gui.Selection.getSelection()) < 1
+                len(Gui.Selection.getSelection()) != 1
                 or len(Gui.Selection.getSelectionEx()[0].SubElementNames) < 1
             ):
                 return False
-            for selobj in Gui.Selection.getSelection():
-                if selobj.isDerivedFrom("Sketcher::SketchObject"):
-                    return False
+            selobj = Gui.Selection.getSelection()[0]
+            if selobj.isDerivedFrom("Sketcher::SketchObject"):
+                return False
             for selFace in Gui.Selection.getSelectionEx()[0].SubObjects:
                 if isinstance(selFace, Part.Vertex):
                     return False
             return True
 
+    class SMExtendBySketchCommandClass:
+        """Extrude by sketch."""
+
+        def GetResources(self):
+            return {
+                    # The name of a svg file available in the resources.
+                    "Pixmap": os.path.join(icons_path, "SheetMetal_ExtendBySketch.svg"),
+                    "MenuText": translate("SheetMetal", "Extend by Sketch"),
+                    "Accel": "T",
+                    "ToolTip": translate(
+                        "SheetMetal",
+                        "Extends a side face using a sketch.\n"
+                        "1. Select a thickness side face to extend.\n"
+                        "2. Select a sketch to shape the extension (Good for creating tabs).\n"
+                        "3. Use Property-editor / Task-panel to modify other parameters",
+                        ),
+                    }
+
+        def Activated(self):
+            sel = Gui.Selection.getSelectionEx()[0]
+            selobj = sel.Object
+            newObj, activeBody = SheetMetalTools.smCreateNewObject(selobj, "Extend")
+            if newObj is None:
+                return
+            selSketch = None
+            if (len(Gui.Selection.getSelection()) > 1):
+                selSketch = Gui.Selection.getSelection()[1]
+            SMExtrudeWall(newObj, selobj, sel.SubElementNames, selSketch)
+            SMViewProviderTree(newObj.ViewObject)
+            SheetMetalTools.smAddNewObject(selobj, newObj, activeBody, SMExtendWallTaskPanel)
+            return
+
+        def IsActive(self):
+            if (
+                len(Gui.Selection.getSelection()) != 2
+                or len(Gui.Selection.getSelectionEx()[0].SubElementNames) != 1
+            ):
+                return False
+            selobj = Gui.Selection.getSelection()[0]
+            if selobj.isDerivedFrom("Sketcher::SketchObject"):
+                return False
+            if not Gui.Selection.getSelection()[1].isDerivedFrom("Sketcher::SketchObject"):
+                return False 
+            for selFace in Gui.Selection.getSelectionEx()[0].SubObjects:
+                if isinstance(selFace, Part.Vertex):
+                    return False
+            return True
+
+
     Gui.addCommand("SheetMetal_Extrude", SMExtrudeCommandClass())
+    Gui.addCommand("SheetMetal_ExtendBySketch", SMExtendBySketchCommandClass())
